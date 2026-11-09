@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#10141c">
+<title>Chest Tracker</title>
+<style>
+* { box-sizing: border-box; }
+body {
+margin: 0;
+padding: 24px 18px 40px;
+background: #10141c;
+color: #f4f5f7;
+font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+}
+main { max-width: 480px; margin: auto; }
+h1 { font-size: 28px; margin-bottom: 4px; }
+.sub { color: #929baa; font-size: 14px; }
+.card {
+background: #1b222e;
+border: 1px solid #2b3543;
+border-radius: 18px;
+padding: 20px;
+margin-top: 18px;
+}
+.counter {
+text-align: center;
+padding: 26px 10px;
+}
+.number {
+font-size: 52px;
+font-weight: 750;
+font-variant-numeric: tabular-nums;
+margin: 12px 0;
+}
+button {
+border: 0;
+border-radius: 13px;
+padding: 15px;
+font-size: 16px;
+font-weight: 650;
+cursor: pointer;
+}
+.add {
+background: #6c9cff;
+color: #10141c;
+width: 100%;
+font-size: 19px;
+}
+.secondary {
+background: #303b4b;
+color: white;
+}
+.reset {
+background: transparent;
+color: #ef8888;
+font-size: 13px;
+}
+.label { color: #a7b1c0; font-size: 13px; }
+.big { font-size: 28px; font-weight: 700; margin: 8px 0; }
+.bar {
+height: 10px;
+background: #303b4b;
+border-radius: 20px;
+overflow: hidden;
+margin: 13px 0 8px;
+}
+.fill {
+height: 100%;
+background: #76a5ff;
+border-radius: 20px;
+transition: width .2s;
+}
+.row {
+display: flex;
+justify-content: space-between;
+align-items: center;
+gap: 10px;
+}
+.milestone {
+padding: 13px 0;
+border-bottom: 1px solid #303b4b;
+}
+.milestone:last-child { border: 0; }
+.milestone-name { font-weight: 650; font-size: 14px; }
+.small { color: #9ca8b8; font-size: 12px; }
+.odds { font-size: 25px; font-weight: 750; }
+.green { color: #83d6a5; }
+</style>
+</head>
+<body>
+<main>
+<h1>Chest Tracker</h1>
+<div class="sub">Your 1 in 137,000 prize hunt</div>
+
+<section class="card counter">
+<div class="label">TOTAL CHESTS OPENED</div>
+<div class="number" id="count">0</div>
+<button class="add" onclick="addChest()">＋ Opened 1 Chest</button>
+<div style="display:flex;gap:10px;margin-top:12px">
+<button class="secondary" style="flex:1" onclick="change(-10)">−10</button>
+<button class="secondary" style="flex:1" onclick="change(10)">+10</button>
+<button class="secondary" style="flex:1" onclick="change(100)">+100</button>
+</div>
+<div class="small" style="margin-top:14px">Automatically saved on this device</div>
+</section>
+
+<section class="card">
+<div class="label">YOUR CURRENT WINNING ODDS</div>
+<div class="odds green" id="chance">0%</div>
+<div class="small">Chance of having won at least once</div>
+<div class="bar"><div class="fill" id="chanceBar"></div></div>
+<div class="row" style="margin-top:20px">
+<div>
+<div class="label">NEXT CHEST</div>
+<div class="big">1 in 137,000</div>
+</div>
+<div style="text-align:right">
+<div class="label">CHANCE PER CHEST</div>
+<div style="font-weight:650">0.000730%</div>
+</div>
+</div>
+</section>
+
+<section class="card">
+<div class="label">NEXT MILESTONE</div>
+<div class="big" id="nextGoal">1,000</div>
+<div class="row">
+<span class="small" id="progressText">0 / 1,000</span>
+<span class="small" id="progressPercent">0%</span>
+</div>
+<div class="bar"><div class="fill" id="nextBar"></div></div>
+<div class="small" id="remaining">1,000 chests remaining</div>
+</section>
+
+<section class="card">
+<div class="row">
+<strong>All Milestones</strong>
+<span class="small">Prize probability</span>
+</div>
+<div id="milestones"></div>
+</section>
+
+<div style="text-align:center;margin-top:24px">
+<button class="reset" onclick="resetCount()">Reset Counter</button>
+</div>
+</main>
+
+<script>
+const GOALS = [
+1000, 2500, 5000, 10000, 15000,
+20000, 25000, 30000, 40000, 50000,
+75000, 95000, 100000, 125000, 137000,
+150000, 175000, 200000, 250000, 300000,
+400000, 500000, 600000, 750000, 1000000
+];
+
+const STORAGE_KEY = "chestTrackerCount";
+let count = Math.max(0, Number(localStorage.getItem(STORAGE_KEY)) || 0);
+
+const fmt = n => n.toLocaleString("en-US");
+
+function probability(n) {
+return (1 - Math.pow(1 - 1/137000, n)) * 100;
+}
+
+function percent(p) {
+if (p === 0) return "0%";
+if (p < 0.0001) return p.toFixed(7) + "%";
+if (p < 0.01) return p.toFixed(5) + "%";
+if (p < 1) return p.toFixed(3) + "%";
+return p.toFixed(2) + "%";
+}
+
+function addChest() {
+count++;
+update();
+}
+
+function change(amount) {
+count = Math.max(0, count + amount);
+update();
+}
+
+function resetCount() {
+if (confirm("Reset your chest counter to zero?")) {
+count = 0;
+update();
+}
+}
+
+function update() {
+localStorage.setItem(STORAGE_KEY, count);
+document.getElementById("count").textContent = fmt(count);
+
+const chance = probability(count);
+document.getElementById("chance").textContent = percent(chance);
+document.getElementById("chanceBar").style.width =
+Math.min(100, chance) + "%";
+
+const next = GOALS.find(g => g > count);
+
+if (next) {
+const previous = GOALS[GOALS.indexOf(next) - 1] || 0;
+const progress = Math.min(100, count / next * 100);
+
+document.getElementById("nextGoal").textContent = fmt(next);
+document.getElementById("progressText").textContent =
+fmt(count) + " / " + fmt(next);
+document.getElementById("progressPercent").textContent =
+progress.toFixed(1) + "%";
+document.getElementById("nextBar").style.width = progress + "%";
+document.getElementById("remaining").textContent =
+fmt(next - count) + " chests remaining";
+} else {
+document.getElementById("nextGoal").textContent = "All milestones reached!";
+document.getElementById("progressText").textContent = "1,000,000+";
+document.getElementById("progressPercent").textContent = "100%";
+document.getElementById("nextBar").style.width = "100%";
+document.getElementById("remaining").textContent =
+"You've completed every listed milestone!";
+}
+
+document.getElementById("milestones").innerHTML =
+GOALS.map((goal, index) => {
+const p = Math.min(100, count / goal * 100);
+const reached = count >= goal;
+return `
+<div class="milestone">
+<div class="row">
+<span class="milestone-name">
+${reached ? "✓ " : ""}${fmt(goal)} chests
+</span>
+<span class="small">${percent(probability(goal))}</span>
+</div>
+<div class="bar">
+<div class="fill" style="width:${p}%"></div>
+</div>
+<div class="small">
+${reached ? "Milestone reached" :
+fmt(goal-count) + " remaining"}
+· ${p.toFixed(1)}% progress
+</div>
+</div>`;
+}).join("");
+}
+
+update();
+</script>
+</body>
+</html>
